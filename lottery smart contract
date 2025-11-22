@@ -1,0 +1,48 @@
+SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/// @title SimpleLottery (demo only)
+/// @notice Simple lottery for learning. Not secure for real funds.
+contract SimpleLottery {
+    address public owner;
+    address[] public players;
+    uint256 public ticketPrice;
+    bool public isOpen;
+
+    event Entered(address indexed player);
+    event WinnerPicked(address indexed winner, uint256 amount);
+    event Opened();
+    event Closed();
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "only owner");
+        _;
+    }
+
+    constructor(uint256 _ticketPriceWei) {
+        owner = msg.sender;
+        ticketPrice = _ticketPriceWei;
+        isOpen = true;
+        emit Opened();
+    }
+
+    function enter() external payable {
+        require(isOpen, "lottery closed");
+        require(msg.value == ticketPrice, "incorrect ticket price");
+        players.push(msg.sender);
+        emit Entered(msg.sender);
+    }
+
+    /// @notice pick a winner using pseudo-randomness -- insecure
+    function pickWinner() external onlyOwner {
+        require(players.length > 0, "no players");
+        // insecure randomness: DO NOT USE IN PRODUCTION
+        uint256 rand = uint256(
+            keccak256(abi.encodePacked(block.timestamp, block.difficulty, players))
+        );
+        uint256 idx = rand % players.length;
+        address winner = players[idx];
+
+        uint256 prize = address(this).balance;
+        // reset state
+        players = new address
